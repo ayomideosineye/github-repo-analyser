@@ -5,7 +5,6 @@
 # library used for making API calls, will be calling from the GitHub API
 import requests
 
-
 # function to get the repository username
 def get_username():
     username = input("Enter the username to get their repos: ")
@@ -14,8 +13,55 @@ def get_username():
 
 # function that gets the API request and returns the repositories
 def get_repositories(username: str):
-    get_repos = requests.get(f"https://api.github.com/users/{username}/repos")
-    return get_repos
+
+    # implementing pagination: A way of dividing huge chunks of data into pages for more 
+    # efficient data retrieval via API calls
+
+    # 'page=' identifies the current page the data is being retrieved from
+    base_url = f"https://api.github.com/users/{username}/repos?page="
+
+
+    # stores all the repos for all the pages given the user
+    all_repos = []
+
+    # initial page num
+    count = 1
+
+    # get the inital page to start the loop 
+    current_page = requests.get(f"{base_url}{count}")
+
+    # checks if the response object status code is valid
+    if current_page.status_code == 200: 
+
+        # loops while the current pages repo list isnt empty 
+        while len(current_page.json()) != 0:
+
+            # loops through each repo in the current pages repo list
+            for repo in current_page.json():
+                # adds each repo for that given page to the all_repos list
+                all_repos.append(repo)
+
+            print(f"Page: {count} was successful")
+ 
+            # increment to the next current page
+            count+=1
+            current_page = requests.get(f"{base_url}{count}")
+
+            # voids the whole pagnation process as incomplete data is invalid even after page 1
+            if current_page.status_code != 200:
+                print(f"Page {count} was unsuccessful therefore whole request was unsuccessful")  
+                print("###################################################",'\n')  
+                return False
+            
+        print("Request was successful")  
+        print("###################################################",'\n')  
+
+        return all_repos 
+
+    else:
+         print("Request was unsuccessful")
+         print("###################################################", '\n')
+         return False
 
 
 # function that loads valid repository data for a username 
@@ -27,22 +73,9 @@ def load_data():
     # loops while the requested data is invalid
     while requested_data is False:
         username = get_username()
-        get_repos = get_repositories(username)
-        requested_data = valid_request(get_repos)
-
+        requested_data = get_repositories(username)
+    
     return username, requested_data
-
-
-# function that checks whether the retrieved data is valid
-def valid_request(data: requests.models.Response):
-    if data.status_code == 200:
-        print("Request was successfull")  
-        print("###################################################",'\n')      
-        return data.json()
-    else:
-        print("Request was unsuccessfull")
-        print("###################################################", '\n')
-        return False
 
 
 # function that returns the languages used and their count, within the users repositories
@@ -119,21 +152,21 @@ def average_stars(repos_data):
 # start the inital program, getting the username and repo_data
 username, repos_data = load_data()
 
+
 # get the languages used by the user given their repos
 language_count = languages_count(repos_data)
-print(f"languages used and count for user '{username}' : ",language_count)
+print(f"languages used and count for user '{username}' : ",language_count, '\n')
 
 # get the repository with the highest star count
 highest_star_repo = highest_stars(repos_data)
-print("Repo with the highest stars:", highest_star_repo)
+print("Repo with the highest stars:", highest_star_repo, '\n')
 
 # get the total stars the user has 
 total = total_stars(repos_data)
-print(f"{username}'s has a total of {total} stars")
+print(f"{username}'s has a total of {total} stars", '\n')
 
 # get the average stars 
 average = average_stars(repos_data)
-
 print(f"{username}'s average stars per repo is {average}")
 
 
