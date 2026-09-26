@@ -11,6 +11,7 @@ def get_username():
     return username
 
 
+
 # function that gets the API request and returns the repositories
 def get_repositories(username: str):
 
@@ -18,26 +19,30 @@ def get_repositories(username: str):
     # efficient data retrieval via API calls
 
     # 'page=' identifies the current page the data is being retrieved from
-    base_url = f"https://api.github.com/users/{username}/repos?page="
-
+    base_url = f"https://api.github.com/users/{username}/repos"
 
     # stores all the repos for all the pages given the user
     all_repos = []
 
     # initial page num
     count = 1
-
+  
     # get the inital page to start the loop 
-    current_page = requests.get(f"{base_url}{count}")
+
+    # per_page further splits the data into chunks but each call is 3 repos NOTE: NOT JUST TOP: 3
+    current_page = requests.get(base_url, params={"page": count, "per_page": 100 })
 
     # checks if the response object status code is valid
     if current_page.status_code == 200: 
 
+         # list of repos for current page
+        current_page_repos = current_page.json()
+
         # loops while the current pages repo list isnt empty 
-        while len(current_page.json()) != 0:
+        while len(current_page_repos) != 0:
 
             # loops through each repo in the current pages repo list
-            for repo in current_page.json():
+            for repo in current_page_repos:
                 # adds each repo for that given page to the all_repos list
                 all_repos.append(repo)
 
@@ -45,13 +50,15 @@ def get_repositories(username: str):
  
             # increment to the next current page
             count+=1
-            current_page = requests.get(f"{base_url}{count}")
+            current_page = requests.get(base_url, params= {"page": count, "per_page": 100})
 
             # voids the whole pagnation process as incomplete data is invalid even after page 1
             if current_page.status_code != 200:
                 print(f"Page {count} was unsuccessful therefore whole request was unsuccessful")  
                 print("###################################################",'\n')  
                 return False
+            else:
+                current_page_repos = current_page.json()
             
         print("Request was successful")  
         print("###################################################",'\n')  
@@ -59,7 +66,7 @@ def get_repositories(username: str):
         return all_repos 
 
     else:
-         print("Request was unsuccessful")
+         print(f"Request was unsuccessful, error: {current_page.status_code}")
          print("###################################################", '\n')
          return False
 
@@ -76,6 +83,11 @@ def load_data():
         requested_data = get_repositories(username)
     
     return username, requested_data
+
+
+# returns the number of repos given the user repos API request
+def total_repos(repos_data):
+    return(len(repos_data))
 
 
 # function that returns the languages used and their count, within the users repositories
@@ -119,6 +131,13 @@ def highest_stars(repos_data):
     return (repo_name, current_highest)
 
 
+def display_repos(repos_data):
+
+    # loop through the repos and post them 
+    for repo in repos_data:
+        print(repo["name"])
+    
+
 # get the total starts given a user 
 def total_stars(repos_data):
 
@@ -148,9 +167,11 @@ def average_stars(repos_data):
     return average
 
 
-
 # start the inital program, getting the username and repo_data
 username, repos_data = load_data()
+
+display_repos(repos_data)
+
 
 
 # get the languages used by the user given their repos
