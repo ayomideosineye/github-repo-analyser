@@ -27,53 +27,44 @@ def get_repositories(username: str):
     # initial page num
     count = 1
   
-    # get the inital page to start the loop 
+    # instansiate a variable that determines if there are still more pages
+    more_pages = True 
 
-    # per_page further splits the data into chunks but each call is 3 repos NOTE: NOT JUST TOP: 3
-    # A lower per_page value means more API requests are needed to retrieve the same amount of data.
-    # For example, per_page=3 with hundreds of repositories could use many requests and potentially
-    # exhaust the API rate limit.
+    while(more_pages):
 
-    current_page = requests.get(base_url, params={"page": count, "per_page": 100 })
-
-    # checks if the response object status code is valid
-    if current_page.status_code == 200: 
-
-         # list of repos for current page
-        current_page_repos = current_page.json()
-
-        # loops while the current pages repo list isnt empty 
-        while len(current_page_repos) != 0:
-
-            # loops through each repo in the current pages repo list
-            for repo in current_page_repos:
-                # adds each repo for that given page to the all_repos list
-                all_repos.append(repo)
-
-            print(f"Page: {count} was successful")
- 
-            # increment to the next current page
-            count+=1
-            current_page = requests.get(base_url, params= {"page": count, "per_page": 100})
-
-            # voids the whole pagnation process as incomplete data is invalid even after page 1
-            if current_page.status_code != 200:
-                print(f"Page {count} was unsuccessful therefore whole request was unsuccessful")  
-                print("###################################################",'\n')  
-                return False
-            else:
-                current_page_repos = current_page.json()
+         # trys to request the current page
+        try:
+            # per_page further splits the data into chunks but each call is 3 repos NOTE: NOT JUST TOP: 3 (when per_page : 3)
+            # A lower per_page value means more API requests are needed to retrieve the same amount of data.
+            # For example, per_page=3 with hundreds of repositories could use many requests and potentially
+            # exhaust the API rate limit.
             
-        print("Request was successful")  
-        print("###################################################",'\n')  
+            current_page = requests.get(base_url, params={"page": count, "per_page": 100 })
+            # raises an error if the status code is not between 200-299
+            current_page.raise_for_status()
+            # if the inital request doesnt work return an exception
+        except requests.RequestException as e:
+            print("The request was unsucessful")
+            # terminates a running Python script and exits the interpreter
+            raise SystemExit(e)
+        else:
+            # list of repos for current page
+            current_page_repos = current_page.json()
 
-        return all_repos 
+            # check if the current_page is empty
+            if len(current_page_repos) == 0:
+                more_pages = False
+            else:
+            # loops through each repo in the current pages repo list
+                for repo in current_page_repos:
+                    # adds each repo for that given page to the all_repos list
+                    all_repos.append(repo)
 
-    else:
-         print(f"Request was unsuccessful, error: {current_page.status_code}")
-         print("###################################################", '\n')
-         return False
-
+                print(f"Request was successful")
+                # increment to the next current page
+                count+=1
+    
+    return all_repos
 
 # function that loads valid repository data for a username 
 def load_data():
