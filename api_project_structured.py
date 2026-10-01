@@ -30,6 +30,10 @@ def get_repositories(username: str):
     # get the inital page to start the loop 
 
     # per_page further splits the data into chunks but each call is 3 repos NOTE: NOT JUST TOP: 3
+    # A lower per_page value means more API requests are needed to retrieve the same amount of data.
+    # For example, per_page=3 with hundreds of repositories could use many requests and potentially
+    # exhaust the API rate limit.
+
     current_page = requests.get(base_url, params={"page": count, "per_page": 100 })
 
     # checks if the response object status code is valid
